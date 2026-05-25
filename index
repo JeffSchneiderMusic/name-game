@@ -1,0 +1,984 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Celebrity — The Party Game</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,300&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0a0a0f;
+    --surface: #12121a;
+    --surface2: #1a1a26;
+    --border: rgba(255,255,255,0.08);
+    --border2: rgba(255,255,255,0.14);
+    --text: #f0ede8;
+    --text2: #9994a8;
+    --text3: #5a5568;
+    --gold: #f5c842;
+    --gold-dim: #c49a1e;
+    --green: #3ecf8e;
+    --red: #f25c5c;
+    --blue: #5b8ff9;
+    --purple: #a78bfa;
+    --team-a: #f5c842;
+    --team-b: #5b8ff9;
+    --r: 12px;
+    --r-sm: 8px;
+  }
+
+  html, body {
+    min-height: 100vh;
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 16px;
+    line-height: 1.5;
+    overflow-x: hidden;
+  }
+
+  /* Subtle noise texture */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .app {
+    position: relative;
+    z-index: 1;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  /* ── SCREENS ── */
+  .screen { display: none; width: 100%; max-width: 560px; padding: 2rem 1.25rem 3rem; }
+  .screen.active { display: block; animation: fadeUp 0.3s ease; }
+  @keyframes fadeUp { from { opacity:0; transform:translateY(16px); } to { opacity:1; transform:translateY(0); } }
+
+  /* ── LOGO ── */
+  .logo {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 52px;
+    letter-spacing: 3px;
+    background: linear-gradient(135deg, var(--gold) 0%, #ffeaa7 50%, var(--gold-dim) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    text-align: center;
+    margin-bottom: 0.2rem;
+  }
+  .logo-sub {
+    text-align: center;
+    font-size: 13px;
+    color: var(--text3);
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    margin-bottom: 2.5rem;
+  }
+
+  /* ── CARDS ── */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--r);
+    padding: 1.25rem 1.5rem;
+    margin-bottom: 1rem;
+  }
+  .card-title {
+    font-size: 11px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--text3);
+    margin-bottom: 1rem;
+  }
+
+  /* ── INPUTS ── */
+  input[type=text], input[type=number] {
+    width: 100%;
+    padding: 10px 14px;
+    background: var(--surface2);
+    border: 1px solid var(--border2);
+    border-radius: var(--r-sm);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 15px;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  input:focus { border-color: var(--gold); }
+  input::placeholder { color: var(--text3); }
+
+  /* ── GRID INPUTS ── */
+  .input-row { display: flex; gap: 10px; margin-bottom: 8px; }
+  .input-row input { flex: 1; }
+
+  /* ── BUTTONS ── */
+  .btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: 7px;
+    padding: 11px 22px;
+    border-radius: var(--r-sm);
+    border: 1px solid var(--border2);
+    background: transparent;
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 15px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s;
+    white-space: nowrap;
+  }
+  .btn:hover { background: var(--surface2); border-color: var(--border2); }
+  .btn:active { transform: scale(0.97); }
+  .btn-gold {
+    background: var(--gold);
+    color: #0a0a0f;
+    border-color: var(--gold);
+    font-weight: 500;
+  }
+  .btn-gold:hover { background: #ffd84d; border-color: #ffd84d; }
+  .btn-green {
+    background: var(--green);
+    color: #0a0a0f;
+    border-color: var(--green);
+    font-size: 18px;
+    padding: 16px 28px;
+    border-radius: var(--r);
+    font-weight: 500;
+  }
+  .btn-green:hover { background: #5df3a8; }
+  .btn-red {
+    background: transparent;
+    color: var(--red);
+    border-color: rgba(242,92,92,0.4);
+    font-size: 15px;
+    padding: 14px 20px;
+    border-radius: var(--r);
+  }
+  .btn-red:hover { background: rgba(242,92,92,0.1); }
+  .btn-full { width: 100%; }
+  .btn-icon {
+    width: 40px; height: 40px;
+    padding: 0; flex-shrink: 0;
+    font-size: 18px;
+  }
+
+  /* ── SEGMENTED CONTROL ── */
+  .seg {
+    display: flex;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: var(--r-sm);
+    padding: 3px;
+    gap: 2px;
+    margin-bottom: 1.25rem;
+  }
+  .seg-btn {
+    flex: 1; padding: 8px 10px;
+    background: transparent; border: none;
+    color: var(--text2);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px; cursor: pointer;
+    border-radius: 6px;
+    transition: all 0.15s;
+  }
+  .seg-btn.active {
+    background: var(--surface);
+    color: var(--text);
+    box-shadow: 0 1px 4px rgba(0,0,0,0.4);
+  }
+
+  /* ── CHOICE PILLS ── */
+  .pills { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 0.75rem; }
+  .pill {
+    padding: 7px 14px;
+    border: 1px solid var(--border2);
+    border-radius: 30px;
+    background: transparent;
+    color: var(--text2);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px; cursor: pointer;
+    transition: all 0.15s;
+  }
+  .pill.active { border-color: var(--gold); background: rgba(245,200,66,0.1); color: var(--gold); }
+
+  /* ── TAGS ── */
+  .tag-wrap { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 10px; }
+  .tag {
+    display: inline-flex; align-items: center; gap: 5px;
+    padding: 4px 10px 4px 12px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    font-size: 13px; color: var(--text);
+  }
+  .tag-x {
+    background: none; border: none; color: var(--text3);
+    font-size: 16px; cursor: pointer; line-height: 1;
+    padding: 0; transition: color 0.15s;
+  }
+  .tag-x:hover { color: var(--red); }
+
+  /* ── OBSCURITY GRID ── */
+  .obs-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 8px; margin-bottom: 1rem; }
+  .obs-card {
+    padding: 12px 10px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: var(--r-sm);
+    cursor: pointer; text-align: center;
+    transition: all 0.15s;
+    font-family: 'DM Sans', sans-serif;
+  }
+  .obs-card:hover { border-color: var(--border2); }
+  .obs-card.active { border-color: var(--gold); background: rgba(245,200,66,0.08); }
+  .obs-card .obs-icon { font-size: 20px; margin-bottom: 4px; }
+  .obs-card .obs-label { font-size: 13px; font-weight: 500; color: var(--text); }
+  .obs-card .obs-desc { font-size: 11px; color: var(--text3); margin-top: 2px; }
+
+  /* ── DIVIDER ── */
+  .divider { border: none; border-top: 1px solid var(--border); margin: 1rem 0; }
+
+  /* ── TURN START ── */
+  .round-pill {
+    display: inline-block;
+    padding: 4px 14px;
+    border: 1px solid var(--border2);
+    border-radius: 20px;
+    font-size: 12px;
+    color: var(--text2);
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    margin-bottom: 1.25rem;
+  }
+  .rule-box {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--gold);
+    border-radius: var(--r-sm);
+    padding: 1rem 1.25rem;
+    margin-bottom: 1.5rem;
+    font-size: 15px;
+    color: var(--text2);
+    line-height: 1.6;
+  }
+  .team-turn-badge {
+    display: inline-block;
+    padding: 6px 18px;
+    border-radius: 30px;
+    font-size: 15px;
+    font-weight: 500;
+    margin-bottom: 0.5rem;
+  }
+  .team-a-badge { background: rgba(245,200,66,0.15); color: var(--gold); border: 1px solid rgba(245,200,66,0.3); }
+  .team-b-badge { background: rgba(91,143,249,0.15); color: var(--blue); border: 1px solid rgba(91,143,249,0.3); }
+
+  /* ── SCORE MINI ── */
+  .score-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 1rem; }
+  .score-mini {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--r-sm);
+    padding: 10px 14px;
+    text-align: center;
+  }
+  .score-mini-label { font-size: 11px; color: var(--text3); margin-bottom: 2px; text-transform: uppercase; letter-spacing: 1px; }
+  .score-mini-num { font-family: 'Bebas Neue', sans-serif; font-size: 30px; letter-spacing: 1px; }
+
+  /* ── PLAYING SCREEN ── */
+  .timer-container {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 1.25rem;
+  }
+  .timer-wrap { position: relative; width: 72px; height: 72px; flex-shrink: 0; }
+  .timer-wrap svg { transform: rotate(-90deg); }
+  .timer-num {
+    position: absolute; inset: 0;
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 26px;
+    letter-spacing: 1px;
+  }
+  .playing-meta { flex: 1; padding-left: 1rem; }
+  .playing-round { font-size: 11px; color: var(--text3); text-transform: uppercase; letter-spacing: 2px; margin-bottom: 4px; }
+  .playing-team { font-size: 14px; font-weight: 500; }
+  .playing-left { font-size: 12px; color: var(--text3); margin-top: 2px; }
+
+  .name-display {
+    text-align: center;
+    padding: 2.5rem 1.5rem;
+    background: var(--surface);
+    border: 1px solid var(--border2);
+    border-radius: var(--r);
+    margin-bottom: 1.25rem;
+    position: relative;
+    overflow: hidden;
+  }
+  .name-display::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, var(--gold), var(--purple));
+  }
+  .name-display .celebrity-name {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 42px;
+    letter-spacing: 2px;
+    color: var(--text);
+    line-height: 1.1;
+  }
+
+  .action-row { display: flex; gap: 10px; margin-bottom: 1rem; }
+  .action-row .btn-green { flex: 2; }
+  .action-row .btn-red { flex: 1; }
+
+  .guessed-mini { font-size: 13px; color: var(--text3); margin-bottom: 4px; }
+  .guessed-scroll { max-height: 90px; overflow-y: auto; }
+  .guessed-item {
+    font-size: 13px; color: var(--green);
+    padding: 3px 0;
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; gap: 6px;
+  }
+
+  /* ── TURN END ── */
+  .big-score {
+    text-align: center;
+    padding: 1.5rem;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--r);
+    margin-bottom: 1rem;
+  }
+  .big-score-label { font-size: 12px; color: var(--text3); text-transform: uppercase; letter-spacing: 2px; margin-bottom: 8px; }
+  .big-score-num { font-family: 'Bebas Neue', sans-serif; font-size: 72px; color: var(--green); letter-spacing: 2px; line-height: 1; }
+  .big-score-unit { font-size: 14px; color: var(--text3); margin-top: 4px; }
+
+  .passed-note {
+    font-size: 13px; color: var(--text3);
+    padding: 10px 14px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--r-sm);
+    margin-bottom: 1rem;
+    line-height: 1.6;
+  }
+
+  /* ── ROUND END / FINAL ── */
+  .trophy-wrap {
+    text-align: center;
+    padding: 2rem 0 1.5rem;
+  }
+  .trophy-icon { font-size: 56px; display: block; margin-bottom: 0.5rem; }
+  .winner-text {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 36px;
+    letter-spacing: 2px;
+    color: var(--gold);
+  }
+
+  .breakdown-row {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--border);
+    font-size: 14px;
+  }
+  .breakdown-row:last-child { border-bottom: none; }
+  .breakdown-label { color: var(--text2); }
+  .breakdown-score { font-family: 'Bebas Neue', sans-serif; font-size: 20px; letter-spacing: 1px; }
+
+  /* ── SPINNER ── */
+  .spinner {
+    display: inline-block; width: 14px; height: 14px;
+    border: 2px solid rgba(255,255,255,0.2);
+    border-top-color: var(--text);
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+    vertical-align: middle;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ── ERROR ── */
+  .error { color: var(--red); font-size: 13px; margin-top: 6px; }
+
+  /* ── HELPERS ── */
+  h2 { font-size: 22px; font-weight: 500; margin-bottom: 0.4rem; }
+  h3 { font-size: 16px; font-weight: 500; margin-bottom: 0.75rem; }
+  p { color: var(--text2); font-size: 14px; line-height: 1.6; }
+  label { font-size: 13px; color: var(--text3); display: block; margin-bottom: 5px; }
+  .mb-sm { margin-bottom: 8px; }
+  .mb { margin-bottom: 1rem; }
+  .mb-lg { margin-bottom: 1.5rem; }
+  .mt-sm { margin-top: 6px; }
+  .mt { margin-top: 1rem; }
+  .flex-end { display: flex; justify-content: flex-end; }
+  .text-center { text-align: center; }
+
+  /* ── MOBILE ── */
+  @media (max-width: 480px) {
+    .logo { font-size: 44px; }
+    .celebrity-name { font-size: 34px !important; }
+    .obs-grid { grid-template-columns: repeat(3,1fr); }
+  }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- ═══ SETUP ═══ -->
+  <div id="screen-setup" class="screen active">
+    <div class="logo">Celebrity</div>
+    <div class="logo-sub">The Party Game</div>
+
+    <div class="card">
+      <div class="card-title">Teams</div>
+      <div class="input-row mb-sm">
+        <div style="flex:1">
+          <label>Team A</label>
+          <input type="text" id="team-a-name" value="Team A" />
+        </div>
+        <div style="flex:1">
+          <label>Team B</label>
+          <input type="text" id="team-b-name" value="Team B" />
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Turn timer</div>
+      <div class="pills">
+        <button class="pill" onclick="setTimer(this,30)">30s</button>
+        <button class="pill active" onclick="setTimer(this,60)">60s</button>
+        <button class="pill" onclick="setTimer(this,90)">90s</button>
+        <button class="pill" onclick="setTimer(this,120)">2 min</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Celebrity names</div>
+      <div class="seg">
+        <button class="seg-btn active" onclick="switchMode('manual',this)">Enter manually</button>
+        <button class="seg-btn" onclick="switchMode('ai',this)">AI generated</button>
+      </div>
+
+      <div id="manual-section">
+        <label>Names per player (for tracking)</label>
+        <input type="number" id="names-per-player" value="5" min="1" max="20" style="width:80px;margin-bottom:1rem" />
+        <div class="input-row">
+          <input type="text" id="name-input" placeholder="Type a name and press Enter..." onkeydown="if(event.key==='Enter')addName()" />
+          <button class="btn btn-icon" onclick="addName()" aria-label="Add name">+</button>
+        </div>
+        <div class="tag-wrap" id="name-tags"></div>
+        <p id="name-count-hint" class="mt-sm" style="font-size:12px;color:var(--text3)"></p>
+      </div>
+
+      <div id="ai-section" style="display:none">
+        <div class="input-row mb" style="align-items:flex-end">
+          <div>
+            <label>How many names?</label>
+            <input type="number" id="ai-count" value="20" min="5" max="60" style="width:90px" />
+          </div>
+        </div>
+        <div class="card-title" style="margin-bottom:8px">Obscurity level</div>
+        <div class="obs-grid">
+          <div class="obs-card active" onclick="setObscurity(this,'easy')">
+            <div class="obs-icon">⭐</div>
+            <div class="obs-label">Famous</div>
+            <div class="obs-desc">A-listers everyone knows</div>
+          </div>
+          <div class="obs-card" onclick="setObscurity(this,'medium')">
+            <div class="obs-icon">⭐⭐</div>
+            <div class="obs-label">Mixed</div>
+            <div class="obs-desc">Famous + cult figures</div>
+          </div>
+          <div class="obs-card" onclick="setObscurity(this,'hard')">
+            <div class="obs-icon">⭐⭐⭐</div>
+            <div class="obs-label">Obscure</div>
+            <div class="obs-desc">Deep cuts only</div>
+          </div>
+        </div>
+        <button class="btn mb" id="gen-btn" onclick="generateNames()" style="width:100%">
+          ✦ Generate names
+        </button>
+        <div class="tag-wrap" id="gen-tags"></div>
+        <p id="gen-error" class="error"></p>
+      </div>
+    </div>
+
+    <p id="start-error" class="error mb-sm"></p>
+    <button class="btn btn-gold btn-full" style="padding:14px;font-size:16px" onclick="startGame()">
+      ▶ &nbsp;Start game
+    </button>
+  </div>
+
+  <!-- ═══ TURN START ═══ -->
+  <div id="screen-turn-start" class="screen">
+    <div class="round-pill" id="ts-round-badge"></div>
+    <h2 id="ts-heading"></h2>
+    <div class="rule-box" id="ts-rule"></div>
+
+    <div class="card text-center mb">
+      <p style="font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:2px;margin-bottom:8px">It's your turn</p>
+      <div id="ts-team-badge" class="mb-sm" style="display:inline-block"></div>
+      <p id="ts-score-preview" style="font-size:13px"></p>
+    </div>
+
+    <div style="display:flex;align-items:center;gap:10px;padding:12px 14px;background:var(--surface);border:1px solid var(--border);border-radius:var(--r-sm);margin-bottom:1.5rem">
+      <span style="font-size:18px">🎭</span>
+      <p id="ts-names-left" style="font-size:13px;margin:0;color:var(--text2)"></p>
+    </div>
+
+    <div class="score-row">
+      <div class="score-mini">
+        <div class="score-mini-label" id="ts-a-label"></div>
+        <div class="score-mini-num" style="color:var(--team-a)" id="ts-a-score"></div>
+      </div>
+      <div class="score-mini">
+        <div class="score-mini-label" id="ts-b-label"></div>
+        <div class="score-mini-num" style="color:var(--team-b)" id="ts-b-score"></div>
+      </div>
+    </div>
+
+    <button class="btn btn-gold btn-full" style="padding:14px;font-size:16px" onclick="beginTurn()">
+      ▶ &nbsp;Begin turn
+    </button>
+  </div>
+
+  <!-- ═══ PLAYING ═══ -->
+  <div id="screen-playing" class="screen">
+    <div class="timer-container">
+      <div class="timer-wrap">
+        <svg width="72" height="72" viewBox="0 0 72 72">
+          <circle cx="36" cy="36" r="30" fill="none" stroke="rgba(255,255,255,0.08)" stroke-width="5"/>
+          <circle id="timer-arc" cx="36" cy="36" r="30" fill="none" stroke="var(--gold)" stroke-width="5"
+            stroke-dasharray="188.5" stroke-dashoffset="0" stroke-linecap="round"/>
+        </svg>
+        <div class="timer-num" id="timer-display">60</div>
+      </div>
+      <div class="playing-meta">
+        <div class="playing-round" id="pl-round-label"></div>
+        <div class="playing-team" id="pl-team-label"></div>
+        <div class="playing-left" id="pl-bowl-left"></div>
+      </div>
+      <div style="font-family:'Bebas Neue',sans-serif;font-size:28px;color:var(--green)" id="pl-turn-score">0</div>
+    </div>
+
+    <div class="name-display">
+      <div class="celebrity-name" id="current-name">—</div>
+    </div>
+
+    <div class="action-row">
+      <button class="btn btn-green" onclick="gotIt()">✓ &nbsp;Got it!</button>
+      <button class="btn btn-red" onclick="passName()">Pass →</button>
+    </div>
+
+    <div class="guessed-mini">Guessed this turn:</div>
+    <div class="guessed-scroll">
+      <div id="guessed-list"></div>
+    </div>
+  </div>
+
+  <!-- ═══ TURN END ═══ -->
+  <div id="screen-turn-end" class="screen">
+    <h2>Turn over!</h2>
+    <p class="mb" id="te-time-msg"></p>
+
+    <div class="big-score mb">
+      <div class="big-score-label">Guessed this turn</div>
+      <div class="big-score-num" id="te-turn-score">0</div>
+      <div class="big-score-unit">names</div>
+    </div>
+
+    <div id="te-passed-section" class="mb"></div>
+
+    <div class="score-row mb">
+      <div class="score-mini">
+        <div class="score-mini-label" id="te-a-label"></div>
+        <div class="score-mini-num" style="color:var(--team-a)" id="te-a-score"></div>
+      </div>
+      <div class="score-mini">
+        <div class="score-mini-label" id="te-b-label"></div>
+        <div class="score-mini-num" style="color:var(--team-b)" id="te-b-score"></div>
+      </div>
+    </div>
+
+    <button class="btn btn-gold btn-full" style="padding:14px;font-size:16px" onclick="nextTurn()">
+      Next turn →
+    </button>
+  </div>
+
+  <!-- ═══ ROUND END ═══ -->
+  <div id="screen-round-end" class="screen">
+    <div class="round-pill" id="re-badge"></div>
+    <h2 id="re-heading"></h2>
+    <p class="mb-lg" id="re-desc"></p>
+
+    <div class="score-row mb">
+      <div class="score-mini">
+        <div class="score-mini-label" id="re-a-label"></div>
+        <div class="score-mini-num" style="color:var(--team-a)" id="re-a-score"></div>
+      </div>
+      <div class="score-mini">
+        <div class="score-mini-label" id="re-b-label"></div>
+        <div class="score-mini-num" style="color:var(--team-b)" id="re-b-score"></div>
+      </div>
+    </div>
+
+    <div class="card mb">
+      <div class="card-title">Totals so far</div>
+      <div class="score-row" style="margin-bottom:0">
+        <div class="score-mini">
+          <div class="score-mini-label" id="re-a-total-label"></div>
+          <div class="score-mini-num" style="color:var(--team-a)" id="re-a-total"></div>
+        </div>
+        <div class="score-mini">
+          <div class="score-mini-label" id="re-b-total-label"></div>
+          <div class="score-mini-num" style="color:var(--team-b)" id="re-b-total"></div>
+        </div>
+      </div>
+    </div>
+
+    <button class="btn btn-gold btn-full" style="padding:14px;font-size:16px" id="re-next-btn" onclick="startNextRound()"></button>
+  </div>
+
+  <!-- ═══ FINAL ═══ -->
+  <div id="screen-final" class="screen">
+    <div class="trophy-wrap">
+      <span class="trophy-icon">🏆</span>
+      <div class="winner-text" id="final-winner"></div>
+    </div>
+
+    <div class="score-row mb">
+      <div class="score-mini">
+        <div class="score-mini-label" id="fin-a-label"></div>
+        <div class="score-mini-num" style="color:var(--team-a);font-size:40px" id="fin-a-score"></div>
+      </div>
+      <div class="score-mini">
+        <div class="score-mini-label" id="fin-b-label"></div>
+        <div class="score-mini-num" style="color:var(--team-b);font-size:40px" id="fin-b-score"></div>
+      </div>
+    </div>
+
+    <div class="card mb">
+      <div class="card-title">Round breakdown</div>
+      <div id="round-breakdown"></div>
+    </div>
+
+    <button class="btn btn-gold btn-full" style="padding:14px;font-size:16px" onclick="resetGame()">
+      ↺ &nbsp;Play again
+    </button>
+  </div>
+
+</div><!-- end .app -->
+
+<script>
+const ROUNDS = [
+  { num:1, name:"Round 1", rule:"Describe the person using any words — no acting, no sounds, no initials.", short:"Describe it" },
+  { num:2, name:"Round 2", rule:"One word only as your clue. Choose wisely — that's all you get!", short:"One word" },
+  { num:3, name:"Round 3", rule:"No words at all. Pure charades — act it out!", short:"Charades" }
+];
+
+let timerMode = 60;
+let obscurity = 'easy';
+let inputMode = 'manual';
+let manualNames = [];
+let aiNames = [];
+let timerInterval = null;
+let state = {};
+
+function $(id){ return document.getElementById(id); }
+function show(id){
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  $('screen-'+id).classList.add('active');
+  window.scrollTo(0,0);
+}
+
+/* ── SETUP ── */
+function setTimer(btn, v){
+  timerMode = v;
+  document.querySelectorAll('.pill[onclick^="setTimer"]').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+}
+function setObscurity(btn, v){
+  obscurity = v;
+  document.querySelectorAll('.obs-card').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+}
+function switchMode(mode, btn){
+  inputMode = mode;
+  document.querySelectorAll('.seg-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  $('manual-section').style.display = mode === 'manual' ? 'block' : 'none';
+  $('ai-section').style.display = mode === 'ai' ? 'block' : 'none';
+}
+
+function addName(){
+  const inp = $('name-input');
+  const val = inp.value.trim();
+  if(!val) return;
+  if(manualNames.includes(val)){ inp.value=''; return; }
+  manualNames.push(val);
+  inp.value = '';
+  renderManualTags();
+}
+function removeName(n){ manualNames = manualNames.filter(x => x !== n); renderManualTags(); }
+function removeAiName(n){ aiNames = aiNames.filter(x => x !== n); renderAiTags(); }
+
+function renderManualTags(){
+  const c = $('name-tags'); c.innerHTML = '';
+  manualNames.forEach(n => {
+    const t = document.createElement('span'); t.className = 'tag';
+    t.innerHTML = n + ' <button class="tag-x" onclick="removeName(\''+n.replace(/'/g,"\\'")+'\')" aria-label="Remove">×</button>';
+    c.appendChild(t);
+  });
+  $('name-count-hint').textContent = manualNames.length > 0 ? manualNames.length + ' name' + (manualNames.length !== 1 ? 's' : '') + ' added' : '';
+}
+function renderAiTags(){
+  const c = $('gen-tags'); c.innerHTML = '';
+  aiNames.forEach(n => {
+    const t = document.createElement('span'); t.className = 'tag';
+    t.innerHTML = n + ' <button class="tag-x" onclick="removeAiName(\''+n.replace(/'/g,"\\'")+'\')" aria-label="Remove">×</button>';
+    c.appendChild(t);
+  });
+}
+
+async function generateNames(){
+  const count = parseInt($('ai-count').value) || 20;
+  const btn = $('gen-btn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span> Generating...';
+  $('gen-error').textContent = '';
+  const obsMap = {
+    easy: 'very famous, universally recognized celebrities — top A-list actors, globally known musicians, iconic athletes, famous world leaders, household names',
+    medium: 'a mix: some very famous celebrities plus cult figures, beloved character actors, famous scientists, historical icons, and niche internet personalities',
+    hard: 'obscure celebrities, cult figures, niche internet personalities, lesser-known historical figures, B-list or character actors, underground musicians, deep-cut pop culture references'
+  };
+  try {
+    const resp = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1000,
+        messages: [{
+          role: 'user',
+          content: 'Generate exactly ' + count + ' celebrity names for the party game Celebrity. Obscurity: ' + obsMap[obscurity] + '. Return ONLY a JSON array of strings, nothing else, no markdown. Mix categories: entertainment, music, sports, politics, history, science. All must be real people.'
+        }]
+      })
+    });
+    const data = await resp.json();
+    const text = data.content.find(b => b.type === 'text')?.text || '';
+    aiNames = JSON.parse(text.replace(/```json|```/g,'').trim());
+    renderAiTags();
+  } catch(e) {
+    $('gen-error').textContent = 'Could not generate names. Check your connection and try again.';
+  }
+  btn.disabled = false;
+  btn.innerHTML = '✦ Regenerate names';
+}
+
+function startGame(){
+  const names = inputMode === 'manual' ? manualNames : aiNames;
+  if(names.length < 2){ $('start-error').textContent = 'Add at least 2 names to start.'; return; }
+  $('start-error').textContent = '';
+  const ta = $('team-a-name').value.trim() || 'Team A';
+  const tb = $('team-b-name').value.trim() || 'Team B';
+  state = {
+    teams: [
+      { name: ta, scores: [0,0,0] },
+      { name: tb, scores: [0,0,0] }
+    ],
+    allNames: [...names],
+    bowl: [...names],
+    round: 0,
+    currentTeam: 0,
+    currentNameVal: null,
+    currentNameIdx: -1,
+    turnGuessed: [],
+    passed: [],
+    _bowlEmpty: false
+  };
+  showTurnStart();
+}
+
+/* ── TURN START ── */
+function showTurnStart(){
+  const r = ROUNDS[state.round];
+  $('ts-round-badge').textContent = r.name + ' — ' + r.short;
+  $('ts-heading').textContent = r.name;
+  $('ts-rule').textContent = r.rule;
+  const t = state.teams[state.currentTeam];
+  const badge = $('ts-team-badge');
+  badge.textContent = t.name + "'s turn";
+  badge.className = 'team-turn-badge ' + (state.currentTeam === 0 ? 'team-a-badge' : 'team-b-badge');
+  const total = t.scores.slice(0, state.round + 1).reduce((a,b) => a+b, 0);
+  $('ts-score-preview').textContent = 'Total score so far: ' + total;
+  $('ts-names-left').textContent = state.bowl.length + ' name' + (state.bowl.length !== 1 ? 's' : '') + ' left in the bowl';
+  $('ts-a-label').textContent = state.teams[0].name;
+  $('ts-b-label').textContent = state.teams[1].name;
+  $('ts-a-score').textContent = state.teams[0].scores.slice(0, state.round+1).reduce((a,b) => a+b, 0);
+  $('ts-b-score').textContent = state.teams[1].scores.slice(0, state.round+1).reduce((a,b) => a+b, 0);
+  show('turn-start');
+}
+
+function beginTurn(){
+  state.passed = [];
+  state.turnGuessed = [];
+  $('guessed-list').innerHTML = '';
+  $('pl-turn-score').textContent = '0';
+  const r = ROUNDS[state.round];
+  $('pl-round-label').textContent = r.name + ' — ' + r.short;
+  const tLabel = $('pl-team-label');
+  tLabel.textContent = state.teams[state.currentTeam].name;
+  tLabel.style.color = state.currentTeam === 0 ? 'var(--team-a)' : 'var(--team-b)';
+  show('playing');
+  nextName();
+  startTimer();
+}
+
+function nextName(){
+  if(state.bowl.length === 0){ endTurn(true); return; }
+  const idx = Math.floor(Math.random() * state.bowl.length);
+  state.currentNameIdx = idx;
+  state.currentNameVal = state.bowl[idx];
+  $('current-name').textContent = state.currentNameVal;
+  $('pl-bowl-left').textContent = state.bowl.length + ' left in bowl';
+}
+
+function gotIt(){
+  if(!state.currentNameVal) return;
+  state.turnGuessed.push(state.currentNameVal);
+  state.bowl.splice(state.currentNameIdx, 1);
+  const item = document.createElement('div');
+  item.className = 'guessed-item';
+  item.textContent = '✓ ' + state.currentNameVal;
+  $('guessed-list').prepend(item);
+  $('pl-turn-score').textContent = state.turnGuessed.length;
+  if(state.bowl.length === 0){ endTurn(true); return; }
+  nextName();
+}
+
+function passName(){
+  if(!state.currentNameVal) return;
+  if(!state.passed.includes(state.currentNameVal)) state.passed.push(state.currentNameVal);
+  const avail = state.bowl.filter((_, i) => i !== state.currentNameIdx);
+  if(avail.length === 0){ endTurn(false); return; }
+  nextName();
+}
+
+/* ── TIMER ── */
+let timeLeft = 0;
+function startTimer(){
+  clearInterval(timerInterval);
+  timeLeft = timerMode;
+  updateTimerUI();
+  timerInterval = setInterval(() => {
+    timeLeft--;
+    updateTimerUI();
+    if(timeLeft <= 0){ clearInterval(timerInterval); endTurn(false); }
+  }, 1000);
+}
+function updateTimerUI(){
+  $('timer-display').textContent = timeLeft;
+  const circ = 188.5;
+  const offset = circ * (1 - timeLeft / timerMode);
+  const arc = $('timer-arc');
+  arc.setAttribute('stroke-dashoffset', offset);
+  arc.setAttribute('stroke', timeLeft <= 10 ? 'var(--red)' : 'var(--gold)');
+}
+
+/* ── TURN END ── */
+function endTurn(bowlEmpty){
+  clearInterval(timerInterval);
+  const score = state.turnGuessed.length;
+  state.teams[state.currentTeam].scores[state.round] += score;
+  $('te-turn-score').textContent = score;
+  $('te-time-msg').textContent = bowlEmpty ? 'The bowl is empty — round over!' : 'Time\'s up!';
+  const ps = $('te-passed-section');
+  if(state.passed.length > 0){
+    ps.innerHTML = '<div class="passed-note">Passed back to bowl: <strong>' + state.passed.join(', ') + '</strong></div>';
+  } else { ps.innerHTML = ''; }
+  $('te-a-label').textContent = state.teams[0].name;
+  $('te-b-label').textContent = state.teams[1].name;
+  $('te-a-score').textContent = state.teams[0].scores.slice(0, state.round+1).reduce((a,b) => a+b, 0);
+  $('te-b-score').textContent = state.teams[1].scores.slice(0, state.round+1).reduce((a,b) => a+b, 0);
+  state._bowlEmpty = bowlEmpty;
+  show('turn-end');
+}
+
+function nextTurn(){
+  if(state._bowlEmpty){ endRound(); return; }
+  state.currentTeam = 1 - state.currentTeam;
+  showTurnStart();
+}
+
+/* ── ROUND END ── */
+function endRound(){
+  const r = ROUNDS[state.round];
+  $('re-badge').textContent = r.name + ' complete';
+  $('re-heading').textContent = r.name + ' done!';
+  $('re-desc').textContent = 'The bowl is empty. Scores for this round:';
+  $('re-a-label').textContent = state.teams[0].name + ' (this round)';
+  $('re-b-label').textContent = state.teams[1].name + ' (this round)';
+  $('re-a-score').textContent = state.teams[0].scores[state.round];
+  $('re-b-score').textContent = state.teams[1].scores[state.round];
+  $('re-a-total-label').textContent = state.teams[0].name + ' total';
+  $('re-b-total-label').textContent = state.teams[1].name + ' total';
+  $('re-a-total').textContent = state.teams[0].scores.reduce((a,b) => a+b, 0);
+  $('re-b-total').textContent = state.teams[1].scores.reduce((a,b) => a+b, 0);
+  const nextBtn = $('re-next-btn');
+  if(state.round < 2){
+    nextBtn.textContent = '▶  Start ' + ROUNDS[state.round + 1].name;
+  } else {
+    nextBtn.textContent = '🏆  See final results';
+  }
+  show('round-end');
+}
+
+function startNextRound(){
+  if(state.round >= 2){ showFinal(); return; }
+  state.round++;
+  state.bowl = [...state.allNames];
+  state.currentTeam = 0;
+  showTurnStart();
+}
+
+/* ── FINAL ── */
+function showFinal(){
+  const totA = state.teams[0].scores.reduce((a,b) => a+b, 0);
+  const totB = state.teams[1].scores.reduce((a,b) => a+b, 0);
+  $('fin-a-label').textContent = state.teams[0].name;
+  $('fin-b-label').textContent = state.teams[1].name;
+  $('fin-a-score').textContent = totA;
+  $('fin-b-score').textContent = totB;
+  if(totA > totB) $('final-winner').textContent = state.teams[0].name + ' wins!';
+  else if(totB > totA) $('final-winner').textContent = state.teams[1].name + ' wins!';
+  else $('final-winner').textContent = "It's a tie!";
+  const bd = $('round-breakdown');
+  bd.innerHTML = ROUNDS.map((r, i) => `
+    <div class="breakdown-row">
+      <span class="breakdown-label">${r.name} — ${r.short}</span>
+      <span class="breakdown-score" style="color:var(--text2)">${state.teams[0].scores[i]} <span style="color:var(--text3)">—</span> ${state.teams[1].scores[i]}</span>
+    </div>
+  `).join('');
+  show('final');
+}
+
+function resetGame(){
+  manualNames = []; aiNames = [];
+  renderManualTags(); renderAiTags();
+  show('setup');
+}
+</script>
+</body>
+</html>
